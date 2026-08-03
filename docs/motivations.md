@@ -54,8 +54,8 @@ this extension fills.
   toggles. The ambilight scenario is the documented default use case, not
   part of the code.
 - **Event-driven, with a safety net**: window signals (`window-created`,
-  `window-destroyed`, `state-changed`/`notify::fullscreen`,
-  `size-changed`, monitor events) cover every transition; a low-frequency
+  `notify::fullscreen`, `size-changed`, monitor events, per-window
+  `unmanaged` for cleanup) cover every transition; a low-frequency
   rescan (default 10 s, configurable, off-able) catches anything the
   signals miss — e.g. a borderless window resized while unfocused.
 - **Debounced stop**: leaving fullscreen is flaky (window switches,
