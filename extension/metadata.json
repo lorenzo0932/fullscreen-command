@@ -4,6 +4,7 @@
   "description": "Run a command when a window enters fullscreen, another when it leaves.",
   "shell-version": ["47", "48", "49"],
   "url": "https://github.com/lorenzo0932/fullscreen-command",
-  "version": 4,
+  "version": 1,
+  "version-name": "1.0",
   "settings-schema": "org.gnome.shell.extensions.fullscreen-command"
 }
