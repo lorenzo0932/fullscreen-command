@@ -210,8 +210,14 @@ export default class FullscreenCommandExtension extends Extension {
         if (!this._settings.get_boolean('gamemode-guard'))
             return false;
         try {
-            const [ok, , status] = GLib.spawn_command_line_sync('gamemoded -s');
-            return ok && status === 0;
+            // gamemoded -s exits 0 both when a session is active and when
+            // it is not (0 means "daemon reachable"); the actual state is
+            // only in the output text, so parse it.
+            const [ok, out] = GLib.spawn_command_line_sync('gamemoded -s');
+            if (!ok)
+                return false;
+            const text = new TextDecoder().decode(out);
+            return text.includes('active') && !text.includes('inactive');
         } catch (e) {
             this._log(`gamemoded check failed: ${e}`);
             return false;
@@ -227,7 +233,7 @@ export default class FullscreenCommandExtension extends Extension {
         this._log(`running ${key}: ${cmd}`);
         Util.spawnCommandLine(cmd, ok => {
             if (!ok)
-                global.logError(
+                console.error(
                     `[fullscreen-command] failed to run ${key}: ${cmd}`);
         });
     }

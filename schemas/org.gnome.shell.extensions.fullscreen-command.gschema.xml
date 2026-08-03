@@ -3,11 +3,11 @@
   <schema id="org.gnome.shell.extensions.fullscreen-command"
           path="/org/gnome/shell/extensions/fullscreen-command/">
     <key name="start-command" type="s">
-      <default>'systemctl --user start ambilight.service'</default>
+      <default>''</default>
       <summary>Command to run when a window goes fullscreen</summary>
     </key>
     <key name="stop-command" type="s">
-      <default>'systemctl --user stop ambilight.service'</default>
+      <default>''</default>
       <summary>Command to run when no window is fullscreen anymore</summary>
     </key>
     <key name="detect-borderless" type="b">
@@ -15,8 +15,8 @@
       <summary>Treat windows covering the whole monitor as fullscreen</summary>
     </key>
     <key name="only-focused" type="b">
-      <default>false</default>
-      <summary>Only consider the focused window</summary>
+      <default>true</default>
+      <summary>Only trigger on the focused window</summary>
     </key>
     <key name="monitor" type="i">
       <default>-1</default>

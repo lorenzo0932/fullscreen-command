@@ -1,23 +1,26 @@
 # Configuration
 
 All settings live in the GSettings schema
-`org.gnome.shell.extensions.fullscreen-command`. Change them with
-`gsettings`, or from the GNOME Extensions app if a preferences UI is
-added later.
+`org.gnome.shell.extensions.fullscreen-command`. Change them from the
+preferences window (`gnome-extensions prefs fullscreen-command@lorenzo0932`
+or the GNOME Extensions app), or with `gsettings`:
 
 ## Keys
 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
-| `start-command` | string | `systemctl --user start ambilight.service` | Command run when a window becomes fullscreen |
-| `stop-command` | string | `systemctl --user stop ambilight.service` | Command run when no window is fullscreen anymore (after the debounce) |
+| `start-command` | string | *(empty)* | Command run when a window becomes fullscreen |
+| `stop-command` | string | *(empty)* | Command run when no window is fullscreen anymore (after the debounce) |
 | `detect-borderless` | bool | `true` | Treat a window covering the whole monitor as fullscreen |
-| `only-focused` | bool | `false` | Only react to the focused window |
+| `only-focused` | bool | `true` | Trigger only when the fullscreen window has focus |
 | `monitor` | int | `-1` | Monitor index to watch; `-1` = any monitor |
 | `stop-delay-ms` | int | `400` | Debounce for the stop command, in milliseconds |
 | `gamemode-guard` | bool | `true` | Do not run the stop command while a GameMode session is active |
 | `rescan-interval-s` | int | `10` | Safety rescan of all windows; `0` disables it |
 | `debug` | bool | `false` | Log debug messages to the journal |
+
+Both commands are empty by default: the extension does nothing until you
+set them.
 
 ## Fullscreen detection
 
@@ -34,6 +37,11 @@ A window on a different workspace than the current one is not an actor,
 so it is not counted — leaving fullscreen (switching to the desktop) runs
 the stop command.
 
+With `only-focused` (default `true`) the window must also be the focused
+one: a fullscreen window in the background does not trigger anything, and
+switching focus away from a fullscreen window runs the stop command after
+the debounce.
+
 ## Behavior details
 
 - **Entering fullscreen** cancels any pending stop and runs
@@ -48,7 +56,14 @@ the stop command.
 
 ## Examples
 
-### Ambilight (the default)
+### A simple script
+
+```sh
+gsettings set ... start-command "/usr/local/bin/start-fullscreen.sh"
+gsettings set ... stop-command  "/usr/local/bin/leave-fullscreen.sh"
+```
+
+### Ambilight (the original use case)
 
 ```sh
 gsettings set org.gnome.shell.extensions.fullscreen-command \
