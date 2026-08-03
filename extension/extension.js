@@ -12,38 +12,18 @@ export default class FullscreenCommandExtension extends Extension {
         this._winConns = new Map();
 
         this._displaySignals = [];
-        try {
-            this._displaySignals.push(global.display.connect('window-created',
-                (_d, win) => {
-                    try {
-                        this._onWindowAdded(win);
-                    } catch (e) {
-                        console.error(`[fullscreen-command] window-created: ${e}`);
-                    }
-                }));
-        } catch (e) {
-            console.error(`[fullscreen-command] no window-created: ${e}`);
-        }
-        for (const sig of ['window-entered-monitor', 'window-left-monitor']) {
-            try {
-                this._displaySignals.push(global.display.connect(sig,
-                    () => {
-                        try {
-                            this._scheduleEval();
-                        } catch (e) {
-                            console.error(`[fullscreen-command] ${sig}: ${e}`);
-                        }
-                    }));
-            } catch (e) {
-                console.error(`[fullscreen-command] no ${sig}: ${e}`);
-            }
-        }
+        this._displaySignals.push(global.display.connect('window-created',
+            (_d, win) => this._onWindowAdded(win)));
+        for (const sig of ['window-entered-monitor', 'window-left-monitor'])
+            this._displaySignals.push(global.display.connect(sig,
+                () => this._scheduleEval()));
 
         for (const actor of global.get_window_actors())
             this._onWindowAdded(actor.meta_window);
 
         const interval = this._settings.get_int('rescan-interval-s');
         if (interval > 0) {
+            // Keep the recurring source alive even if one pass fails.
             this._rescanTimer = GLib.timeout_add_seconds(
                 GLib.PRIORITY_DEFAULT, interval, () => {
                     try {
@@ -72,13 +52,8 @@ export default class FullscreenCommandExtension extends Extension {
             this._rescanTimer = null;
         }
         for (const [win, conns] of this._winConns) {
-            for (const id of conns) {
-                try {
-                    win.disconnect(id);
-                } catch (e) {
-                    console.error(`[fullscreen-command] disconnect: ${e}`);
-                }
-            }
+            for (const id of conns)
+                win.disconnect(id);
         }
         this._winConns.clear();
         for (const id of this._displaySignals)
@@ -95,6 +70,8 @@ export default class FullscreenCommandExtension extends Extension {
         if (!win || this._winConns.has(win))
             return;
         const conns = [];
+        // Window signals differ across Mutter versions (e.g. 'destroy' and
+        // 'state-changed' do not exist on every release), so guard each one.
         try {
             conns.push(win.connect('unmanaged',
                 () => this._onWindowDestroyed(win)));
@@ -164,11 +141,7 @@ export default class FullscreenCommandExtension extends Extension {
                     if (this._shouldBlockStop())
                         return GLib.SOURCE_REMOVE;
                     this._running = false;
-                    try {
-                        this._run('stop-command');
-                    } catch (e) {
-                        console.error(`[fullscreen-command] stop: ${e}`);
-                    }
+                    this._run('stop-command');
                     return GLib.SOURCE_REMOVE;
                 });
         } else if (this._stopTimer) {
