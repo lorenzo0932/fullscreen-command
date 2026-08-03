@@ -1,9 +1,6 @@
 import GLib from 'gi://GLib';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
-
-const SHELL_MAJOR = parseInt(Config.PACKAGE_VERSION, 10);
 
 export default class FullscreenCommandExtension extends Extension {
     enable() {
@@ -14,16 +11,33 @@ export default class FullscreenCommandExtension extends Extension {
         this._evalId = null;
         this._winConns = new Map();
 
-        this._displaySignals = [
-            global.display.connect('window-created',
-                (_d, win) => this._onWindowAdded(win)),
-            global.display.connect('window-destroyed',
-                (_d, win) => this._onWindowDestroyed(win)),
-            global.display.connect('window-entered-monitor',
-                () => this._scheduleEval()),
-            global.display.connect('window-left-monitor',
-                () => this._scheduleEval()),
-        ];
+        this._displaySignals = [];
+        try {
+            this._displaySignals.push(global.display.connect('window-created',
+                (_d, win) => {
+                    try {
+                        this._onWindowAdded(win);
+                    } catch (e) {
+                        console.error(`[fullscreen-command] window-created: ${e}`);
+                    }
+                }));
+        } catch (e) {
+            console.error(`[fullscreen-command] no window-created: ${e}`);
+        }
+        for (const sig of ['window-entered-monitor', 'window-left-monitor']) {
+            try {
+                this._displaySignals.push(global.display.connect(sig,
+                    () => {
+                        try {
+                            this._scheduleEval();
+                        } catch (e) {
+                            console.error(`[fullscreen-command] ${sig}: ${e}`);
+                        }
+                    }));
+            } catch (e) {
+                console.error(`[fullscreen-command] no ${sig}: ${e}`);
+            }
+        }
 
         for (const actor of global.get_window_actors())
             this._onWindowAdded(actor.meta_window);
@@ -32,7 +46,11 @@ export default class FullscreenCommandExtension extends Extension {
         if (interval > 0) {
             this._rescanTimer = GLib.timeout_add_seconds(
                 GLib.PRIORITY_DEFAULT, interval, () => {
-                    this._evaluate();
+                    try {
+                        this._evaluate();
+                    } catch (e) {
+                        console.error(`[fullscreen-command] rescan: ${e}`);
+                    }
                     return GLib.SOURCE_CONTINUE;
                 });
         }
@@ -54,8 +72,13 @@ export default class FullscreenCommandExtension extends Extension {
             this._rescanTimer = null;
         }
         for (const [win, conns] of this._winConns) {
-            for (const id of conns)
-                win.disconnect(id);
+            for (const id of conns) {
+                try {
+                    win.disconnect(id);
+                } catch (e) {
+                    console.error(`[fullscreen-command] disconnect: ${e}`);
+                }
+            }
         }
         this._winConns.clear();
         for (const id of this._displaySignals)
@@ -73,6 +96,12 @@ export default class FullscreenCommandExtension extends Extension {
             return;
         const conns = [];
         try {
+            conns.push(win.connect('unmanaged',
+                () => this._onWindowDestroyed(win)));
+        } catch (e) {
+            this._log(`no unmanaged: ${e}`);
+        }
+        try {
             conns.push(win.connect('notify::fullscreen',
                 () => this._scheduleEval()));
         } catch (e) {
@@ -83,14 +112,6 @@ export default class FullscreenCommandExtension extends Extension {
                 () => this._scheduleEval()));
         } catch (e) {
             this._log(`no size-changed: ${e}`);
-        }
-        if (SHELL_MAJOR >= 46) {
-            try {
-                conns.push(win.connect('state-changed',
-                    () => this._scheduleEval()));
-            } catch (e) {
-                this._log(`no state-changed: ${e}`);
-            }
         }
         this._winConns.set(win, conns);
         this._scheduleEval();
@@ -113,7 +134,11 @@ export default class FullscreenCommandExtension extends Extension {
             return;
         this._evalId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             this._evalId = null;
-            this._evaluate();
+            try {
+                this._evaluate();
+            } catch (e) {
+                console.error(`[fullscreen-command] eval: ${e}`);
+            }
             return GLib.SOURCE_REMOVE;
         });
     }
@@ -139,7 +164,11 @@ export default class FullscreenCommandExtension extends Extension {
                     if (this._shouldBlockStop())
                         return GLib.SOURCE_REMOVE;
                     this._running = false;
-                    this._run('stop-command');
+                    try {
+                        this._run('stop-command');
+                    } catch (e) {
+                        console.error(`[fullscreen-command] stop: ${e}`);
+                    }
                     return GLib.SOURCE_REMOVE;
                 });
         } else if (this._stopTimer) {
@@ -205,6 +234,6 @@ export default class FullscreenCommandExtension extends Extension {
 
     _log(msg) {
         if (this._settings && this._settings.get_boolean('debug'))
-            global.log(`[fullscreen-command] ${msg}`);
+            console.log(`[fullscreen-command] ${msg}`);
     }
 }
