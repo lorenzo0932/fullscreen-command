@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.fullscreen-command"
+          path="/org/gnome/shell/extensions/fullscreen-command/">
+    <key name="start-command" type="s">
+      <default>'systemctl --user start ambilight.service'</default>
+      <summary>Command to run when a window goes fullscreen</summary>
+    </key>
+    <key name="stop-command" type="s">
+      <default>'systemctl --user stop ambilight.service'</default>
+      <summary>Command to run when no window is fullscreen anymore</summary>
+    </key>
+    <key name="detect-borderless" type="b">
+      <default>true</default>
+      <summary>Treat windows covering the whole monitor as fullscreen</summary>
+    </key>
+    <key name="only-focused" type="b">
+      <default>false</default>
+      <summary>Only consider the focused window</summary>
+    </key>
+    <key name="monitor" type="i">
+      <default>-1</default>
+      <summary>Monitor index to watch, -1 for any</summary>
+    </key>
+    <key name="stop-delay-ms" type="i">
+      <default>400</default>
+      <summary>Debounce before running the stop command, in ms</summary>
+    </key>
+    <key name="gamemode-guard" type="b">
+      <default>true</default>
+      <summary>Keep the session running while a GameMode session is active</summary>
+    </key>
+    <key name="rescan-interval-s" type="i">
+      <default>10</default>
+      <summary>Safety rescan interval in seconds, 0 to disable</summary>
+    </key>
+    <key name="debug" type="b">
+      <default>false</default>
+      <summary>Log debug messages to the journal</summary>
+    </key>
+  </schema>
+</schemalist>
